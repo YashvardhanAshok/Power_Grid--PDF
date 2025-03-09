@@ -31,15 +31,10 @@ python -m venv venv
 
 Once the virtual environment is created, you need to activate it:
 
-- **Windows:**
+**Windows:**
   ```sh
   venv\Scripts\activate
   ```
-- **Linux/Mac:**
-  ```sh
-  source venv/bin/activate
-  ```
-
 If the environment does not start correctly, try manually selecting the interpreter:
 
 1. Press **Ctrl+Shift+P** to open the command palette.
