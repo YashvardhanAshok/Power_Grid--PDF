@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="stylesheet" type="text/css" href="index.css" />
+  </head>
+  <body>
+    <div class="nav">
+      <div class="model_name_cu">
+        <h1>Friday</h1>
+      </div>
+
+      <div class="profile_and_export_chat">
+        <div class="Database_text">Database</div>
+        <div class="profile"></div>
+      </div>
+    </div>
+
+    <div class="database_bar">
+      <!-- style="display:none" -->
+      <!-- <h1>DATABASE</h1> -->
+
+      <div class="surch_filter">
+        <input
+          type="text"
+          id="searchInput"
+          class="search-box"
+          placeholder="Search for files..."
+          onkeyup="searchTable()"
+        />
+        <button id="create_vector_data">
+          Create Vector Data
+        </button>
+      </div>
+
+      <!-- Table -->
+      <table id="fileTable">
+        <colgroup>
+          <col style="width: 75%" />
+          <col style="width: 25%" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>File Name</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+
+      <!-- Pagination Controls -->
+      <div class="pagination">
+        <button
+          id="prevBtn"
+          class="pagination-btn disabled"
+          onclick="changePage(-1)"
+        >
+          Previous
+        </button>
+        <span id="pageInfo"></span>
+        <button id="nextBtn" class="pagination-btn" onclick="changePage(1)">
+          Next
+        </button>
+      </div>
+    </div>
+
+    <div class="contaner">
+      <div class="con_box">
+        <article class="hello">Hello, Yash</article>
+
+        <div class="conversation_box" id="chatbox"></div>
+
+        <div class="bottom_tab">
+          <div class="surch_bar">
+            <div class="chat_box" contenteditable="true" id="userInput"></div>
+            <div class="bottom_tab_felx">
+              <div id="use_dataset" class="active">Use Dataset</div>
+
+              <div class="arrow" onclick="sendMessage()">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="discalamer">
+          Friday can make mistakes, so double-check it
+        </div>
+      </div>
+
+      <div id="drop_zone">Drop PDF file here</div>
+      <div id="overlay"></div>
+
+      <object id="pdf_object" class="pdf" data=""></object>
+    </div>
+
+    <script src="index.js"></script>
+  </body>
+</html>

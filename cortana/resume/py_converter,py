@@ -1,0 +1,43 @@
+import pdfkit
+import pypandoc
+import os
+from datetime import datetime
+
+now = datetime.now()
+
+
+
+
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+html_file = os.path.join(base_dir, "sandbox", "resume.html")
+
+pdf_file = os.path.join(base_dir, "sandbox", "resume.pdf")
+log_file = "YASHVARDHAN ASHOK" + str(now.hour) + str(now.minute) + str(now.second) + ".pdf"
+log_pdf = os.path.join(base_dir, "sandbox","log" , log_file)
+print(log_pdf)
+
+
+docx_file = os.path.join(base_dir, "sandbox", "YASHVARDHAN ASHOK.docx")
+
+# Manually specify the path to wkhtmltopdf
+path_wkhtmltopdf = r"D:\ENTERTERMENT\coding\dependency\wkhtmltopdf\bin\wkhtmltopdf.exe"
+config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
+
+try:
+    pdfkit.from_file(html_file, pdf_file, configuration=config)
+    pdfkit.from_file(html_file, log_pdf, configuration=config)
+    print(f"PDF generated successfully: {log_pdf}")
+except Exception as e:
+    print(f"Error generating PDF: {e}")
+
+# word
+# try:
+#     output = pypandoc.convert_file(html_file, 'docx', outputfile=docx_file)
+#     print(f"Word document generated successfully: {docx_file}")
+# except Exception as e:
+#     print(f"Error generating Word document: {e}")
+
+
+
+
