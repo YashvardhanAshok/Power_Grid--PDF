@@ -35,7 +35,7 @@ Once the virtual environment is created, you need to activate it:
   ```sh
   venv\Scripts\activate
   ```
-If the environment does not start correctly, try manually selecting the interpreter:
+ If the environment does not start correctly, try manually selecting the interpreter:
 
 1. Press **Ctrl+Shift+P** to open the command palette.
 2. Search for **"Python: Select Interpreter"** and select it.
