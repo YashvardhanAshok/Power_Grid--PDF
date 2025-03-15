@@ -1,66 +1,68 @@
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
 import os
-from sentence_transformers import SentenceTransformer  
-from ollama import chat
+import fitz  # PyMuPDF for PDF text extraction
 import chromadb
-import webbrowser 
+from sentence_transformers import SentenceTransformer
+import ollama
 
-app = Flask(__name__, static_folder="Front End")
-CORS(app)  
+# Paths
+PDF_DIR = r"db\data\ACCOUNTANT"
 
-@app.route('/')
-def serve_frontend():
-    return send_from_directory("Front End", "index.html")
+# Load Sentence Transformer for vector embeddings
+embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
-@app.route('/<path:path>')
-def serve_static_files(path):
-    return send_from_directory("Front End", path)
+# Initialize ChromaDB for storing resume vectors
+chroma_client = chromadb.PersistentClient(path="./resume_db")
+collection = chroma_client.get_or_create_collection(name="resume_vectors")
 
-# Load embedding model amd Connect to ChromaDB 
-model = SentenceTransformer("all-MiniLM-L6-v2")
-chroma_client = chromadb.PersistentClient(path=r"db/vector_db")
 
-try:
-    collection = chroma_client.get_collection("pdf_embeddings")
-except chromadb.errors.InvalidCollectionException:
-    collection = chroma_client.create_collection("pdf_embeddings")
+def extract_text_from_pdf(pdf_path):
+    """Extract text from a PDF file."""
+    doc = fitz.open(pdf_path)
+    text = ""
+    for page in doc:
+        text += page.get_text()
+    return text.strip()
 
-@app.route('/chat', methods=['POST'])
-def chatbot():
-    data = request.json
-    user_message = data.get("message", "")
-    modle_name = data.get("modle_name", "")
-    use_dataset = data.get("use_dataset", False)
 
-    def query_pdf_database(user_message):
-        """Fetch relevant parts of the resume from the vector database."""
-        query_embedding = model.encode(user_message).tolist()  
-        results = collection.query(query_embeddings=[query_embedding], n_results=3)
+def is_resume(text):
+    """Use an LLM to determine if a document is a resume."""
+    response = ollama.chat(
+        model="gemma:2b",
+        messages=[{"role": "user", "content": f"Is this document a resume? Reply 'Yes' or 'No'.\n{text[:1000]}"}],
+    )
+    return "yes" in response["message"]["content"].lower()
 
-        if results["documents"]:
-            return "\n".join(results["documents"][0])  
-        return "No relevant documents found."
 
-    relevant_docs = query_pdf_database(user_message)
+def index_resumes(pdf_dir):
+    """Extract text, filter resumes, generate embeddings, and store in ChromaDB."""
+    for root, _, files in os.walk(pdf_dir):
+        for file in files:
+            if file.endswith(".pdf"):
+                file_path = os.path.join(root, file)
+                text = extract_text_from_pdf(file_path)
+                if not text:
+                    continue  # Skip empty PDFs
+                
+                # Check if it's a resume
+                if not is_resume(text):
+                    print(f"Skipping (Not a resume): {file}")
+                    continue
 
-    try:
-        if use_dataset and relevant_docs != "No relevant documents found.":
-            prompt = f"Based on the following resume information, answer the user's question:\n\n{relevant_docs}\n\nQuestion: {user_message}"
-        else:
-            prompt = user_message  
+                # Generate vector embeddings for resumes
+                embedding = embedding_model.encode(text).tolist()
+                collection.add(
+                    ids=[file],
+                    embeddings=[embedding],
+                    metadatas=[{"file_name": file, "file_path": file_path, "text": text}],
+                )
+                print(f"Indexed Resume: {file}")
 
-        response = chat(model=modle_name, messages=[{"role": "user", "content": prompt}])
 
-        return jsonify({"response": response.message.content})
-    
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"error": "An error occurred while processing the request."}), 500
 
-if __name__ == '__main__':
-    port = 5000
-    url = f"http://127.0.0.1:{port}/"
 
-    webbrowser.open(url)
-    app.run(debug=True, host='0.0.0.0', port=port)
+
+# **Run this once to index resumes**
+index_resumes(PDF_DIR)
+
+# **Example Queries**
+

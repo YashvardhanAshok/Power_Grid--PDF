@@ -2,7 +2,12 @@
 venv/
 .Venv/
 env/
-.venv/
+db/
+.db/
+
+Cirtana-lite/
+.Cirtana-lite/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
