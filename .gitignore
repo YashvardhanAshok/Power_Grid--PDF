@@ -2,11 +2,13 @@
 venv/
 .Venv/
 env/
-db/
-.db/
+db/data/
+.db/data/
 
-Cirtana-lite/
-.Cirtana-lite/
+Cirtana-lite/vosk-model-en-in-0.5/
+.Cirtana-lite/vosk-model-en-in-0.5/
+.Cirtana-lite/vosk-model-small-en-us-0.15/
+Cirtana-lite/vosk-model-small-en-us-0.15/
 
 
 # Byte-compiled / optimized / DLL files
