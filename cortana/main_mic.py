@@ -73,7 +73,6 @@ def start_recording(event):
     global recording
     global Thread
     
-    
     if not recording:
         recording = True
         if Thread:
