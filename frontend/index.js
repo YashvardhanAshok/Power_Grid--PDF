@@ -116,7 +116,10 @@ async function loadModels() {
 
   // pick saved model or first available
   if (!state.model || !d.models.find(m => m.name === state.model)) {
-    state.model = d.models[0].name;
+    state.model = pickDefaultModel(d.models);
+    localStorage.setItem("model", state.model);
+  } else if (state.model === "gemma3:1b" && d.models.find(m => m.name === "gemma3:270m")) {
+    state.model = "gemma3:270m";
     localStorage.setItem("model", state.model);
   }
   updateModelDisplay(state.model);
@@ -146,6 +149,10 @@ function selectModel(name) {
   document.querySelectorAll(".model-item").forEach(el => {
     el.classList.toggle("active", el.querySelector(".model-item-name")?.textContent === name);
   });
+}
+
+function pickDefaultModel(models) {
+  return models.find(m => m.name === "gemma3:270m")?.name || models[0].name;
 }
 
 function toggleModelMenu() {
@@ -545,10 +552,21 @@ async function doRag(message) {
       }),
     });
 
+    if (!r.ok) {
+      let detail = `Chat failed with HTTP ${r.status}`;
+      try {
+        const d = await r.json();
+        if (d.error) detail = d.error;
+      } catch {}
+      throw new Error(detail);
+    }
+    if (!r.body) throw new Error("Chat stream did not open.");
+
     const reader  = r.body.getReader();
     const decoder = new TextDecoder();
     let   buf     = "";
     let   ctxUsed = 0;
+    let   streamErrored = false;
 
     while (true) {
       const { value, done } = await reader.read();
@@ -569,7 +587,9 @@ async function doRag(message) {
             scrollChat();
           } else if (ev.type === "done") {
             cursor.remove();
-            body.innerHTML = marked.parse(full);
+            body.innerHTML = full.trim()
+              ? marked.parse(full)
+              : `<span style="color:var(--text-3)">The model returned an empty response.</span>`;
             if (ctxUsed > 0) {
               const badge = document.createElement("div");
               badge.className = "ctx-badge";
@@ -578,15 +598,20 @@ async function doRag(message) {
             }
             scrollChat();
           } else if (ev.type === "error") {
+            streamErrored = true;
             cursor.remove();
             body.innerHTML = `<span style="color:var(--error)">Error: ${esc(ev.text)}</span>`;
           }
         } catch {}
       }
     }
+    if (!full.trim() && !streamErrored) {
+      cursor.remove();
+      body.innerHTML = `<span style="color:var(--text-3)">The model returned an empty response.</span>`;
+    }
   } catch (e) {
     cursor.remove();
-    body.innerHTML = `<span style="color:var(--error)">Cannot reach backend — is it running?</span>`;
+    body.innerHTML = `<span style="color:var(--error)">${esc(e.message || "Cannot reach backend - is it running?")}</span>`;
   }
 }
 

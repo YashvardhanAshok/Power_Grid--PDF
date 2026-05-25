@@ -29,6 +29,10 @@ CHUNK_SIZE   = 800
 CHUNK_OVERLAP= 100
 TOP_K        = 6
 SESSION_TTL  = 86400   # 24 h
+OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "180"))
+OLLAMA_NUM_PREDICT = int(os.getenv("OLLAMA_NUM_PREDICT", "512"))
+OLLAMA_NUM_CTX = int(os.getenv("OLLAMA_NUM_CTX", "512"))
+OLLAMA_NUM_BATCH = int(os.getenv("OLLAMA_NUM_BATCH", "16"))
 
 app = Flask(__name__)
 CORS(app, origins="*", supports_credentials=True)
@@ -195,16 +199,43 @@ def file_hash(path: str) -> str:
     return h.hexdigest()
 
 def ollama_stream(model: str, prompt: str):
-    with http_req.post(f"{OLLAMA_URL}/api/generate",
-                       json={"model": model, "prompt": prompt, "stream": True},
-                       stream=True, timeout=180) as r:
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "stream": True,
+        "options": {
+            "temperature": 0.2,
+            "num_predict": OLLAMA_NUM_PREDICT,
+            "num_ctx": OLLAMA_NUM_CTX,
+            "num_batch": OLLAMA_NUM_BATCH,
+        },
+    }
+    with http_req.post(
+        f"{OLLAMA_URL}/api/generate",
+        json=payload,
+        stream=True,
+        timeout=(10, OLLAMA_TIMEOUT),
+    ) as r:
+        try:
+            r.raise_for_status()
+        except http_req.HTTPError as e:
+            detail = r.text.strip()
+            raise RuntimeError(f"Ollama request failed: {detail or e}") from e
+
         for line in r.iter_lines():
-            if line:
+            if not line:
+                continue
+            try:
                 chunk = json.loads(line)
-                if chunk.get("response"):
-                    yield chunk["response"]
-                if chunk.get("done"):
-                    break
+            except json.JSONDecodeError as e:
+                raise RuntimeError(f"Ollama returned invalid JSON: {line[:200]!r}") from e
+
+            if chunk.get("error"):
+                raise RuntimeError(f"Ollama error: {chunk['error']}")
+            if chunk.get("response"):
+                yield chunk["response"]
+            if chunk.get("done"):
+                break
 
 def ollama_call(model: str, prompt: str) -> str:
     return "".join(ollama_stream(model, prompt))
@@ -528,11 +559,18 @@ def chat_stream():
 
     def generate():
         yield f"data: {json.dumps({'type':'start','context_chunks':len(context_chunks)})}\n\n"
+        tokens_sent = 0
         try:
             for token in ollama_stream(model, prompt):
+                tokens_sent += 1
                 yield f"data: {json.dumps({'type':'token','text':token})}\n\n"
         except Exception as e:
+            log.exception("Chat stream failed")
             yield f"data: {json.dumps({'type':'error','text':str(e)})}\n\n"
+            return
+        if tokens_sent == 0:
+            yield f"data: {json.dumps({'type':'error','text':'Ollama finished without returning any text. Try a larger model or restart Ollama.'})}\n\n"
+            return
         yield f"data: {json.dumps({'type':'done'})}\n\n"
 
     return Response(stream_with_context(generate()), mimetype="text/event-stream",
