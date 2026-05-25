@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Friday — Sign In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090f;--bg2:#0d1017;--bg3:#111520;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#e2e6f0;--muted:rgba(226,230,240,0.5);--dim:rgba(226,230,240,0.3);
+  --accent:#6c72ff;--accent-d:#5a60e8;--accent-glow:rgba(108,114,255,0.22);
+  --success:#3ecf6c;--error:#ff5f5f;
+  --r:12px;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
+
+/* Grid bg */
+.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,0.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.022) 1px,transparent 1px);background-size:52px 52px;mask-image:radial-gradient(ellipse 75% 75% at 50% 50%,black 20%,transparent 100%)}
+
+/* Orbs */
+.orb{position:fixed;border-radius:50%;pointer-events:none;filter:blur(90px)}
+.o1{width:560px;height:560px;background:radial-gradient(circle,rgba(108,114,255,0.16),transparent 70%);top:-140px;left:-140px;animation:drift 16s ease-in-out infinite alternate}
+.o2{width:420px;height:420px;background:radial-gradient(circle,rgba(80,180,255,0.09),transparent 70%);bottom:-100px;right:-100px;animation:drift 20s ease-in-out infinite alternate-reverse}
+@keyframes drift{to{transform:translate(50px,40px) scale(1.1)}}
+
+/* Layout */
+.page{position:relative;z-index:1;height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+
+/* Card */
+.card{width:100%;max-width:408px;background:rgba(255,255,255,0.035);border:1px solid var(--border2);border-radius:22px;padding:40px 38px;backdrop-filter:blur(24px);animation:cardIn 0.5s cubic-bezier(.22,.68,0,1.15) both}
+@keyframes cardIn{from{opacity:0;transform:translateY(22px) scale(0.96)}to{opacity:1;transform:none}}
+
+/* Header */
+.hd{margin-bottom:30px}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.logo-mark{width:34px;height:34px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:17px;font-weight:500;color:#fff;box-shadow:0 0 20px var(--accent-glow)}
+.logo-name{font-family:var(--mono);font-size:19px;font-weight:500;letter-spacing:-0.3px}
+.logo-sub{font-size:13px;color:var(--muted)}
+
+/* Tabs */
+.tabs{display:flex;gap:3px;background:rgba(0,0,0,0.35);border-radius:10px;padding:3px;margin-bottom:26px}
+.tab{flex:1;padding:8px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;font-family:var(--font);color:var(--dim);transition:all .18s}
+.tab.active{background:rgba(255,255,255,0.09);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,0.35)}
+
+/* Fields */
+.form{animation:fIn .22s ease both}
+@keyframes fIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.field{margin-bottom:15px}
+.field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--dim);font-weight:500;margin-bottom:7px}
+.field input{width:100%;padding:10px 13px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--font);font-size:14px;outline:none;transition:border-color .18s,background .18s}
+.field input:focus{border-color:rgba(108,114,255,0.5);background:rgba(108,114,255,0.06)}
+.field input::placeholder{color:rgba(255,255,255,0.18)}
+
+/* Button */
+.btn{width:100%;padding:11px;margin-top:6px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:var(--font);font-size:14px;font-weight:500;cursor:pointer;transition:background .18s,transform .12s,opacity .18s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn:hover{background:var(--accent-d)}.btn:active{transform:scale(0.975)}.btn:disabled{opacity:0.45;cursor:not-allowed}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,0.25);border-top-color:#fff;border-radius:50%;animation:sp .65s linear infinite;flex-shrink:0}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Alert */
+.alert{font-size:13px;padding:9px 13px;border-radius:8px;margin-top:10px;display:none;align-items:center;gap:7px}
+.alert.err{display:flex;background:rgba(255,95,95,0.1);border:1px solid rgba(255,95,95,0.22);color:#fca5a5}
+.alert.ok{display:flex;background:rgba(62,207,108,0.1);border:1px solid rgba(62,207,108,0.22);color:#86efac}
+
+/* Hint */
+.hint{font-size:12px;color:var(--dim);text-align:center;margin-top:18px}
+.hint code{font-family:var(--mono);font-size:11px;background:rgba(255,255,255,0.07);padding:2px 7px;border-radius:5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="orb o1"></div>
+<div class="orb o2"></div>
+<div class="page">
+  <div class="card">
+    <div class="hd">
+      <div class="logo">
+        <div class="logo-mark">F</div>
+        <span class="logo-name">friday</span>
+      </div>
+      <div class="logo-sub">Local document intelligence</div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="sw('in')">Sign in</button>
+      <button class="tab"        onclick="sw('up')">Register</button>
+    </div>
+
+    <!-- Sign in -->
+    <div id="fIn" class="form">
+      <div class="field"><label>Username</label><input id="iU" type="text" placeholder="username" autocomplete="username"/></div>
+      <div class="field"><label>Password</label><input id="iP" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
+      <button class="btn" id="bIn" onclick="doLogin()">Sign in</button>
+      <div class="alert" id="aIn"></div>
+    </div>
+
+    <!-- Register -->
+    <div id="fUp" class="form" style="display:none">
+      <div class="field"><label>Full name</label><input id="rN" type="text" placeholder="Yash Sharma"/></div>
+      <div class="field"><label>Username</label><input id="rU" type="text" placeholder="yash" autocomplete="username"/></div>
+      <div class="field"><label>Password</label><input id="rP" type="password" placeholder="••••••••" autocomplete="new-password"/></div>
+      <button class="btn" id="bUp" onclick="doReg()">Create account</button>
+      <div class="alert" id="aUp"></div>
+    </div>
+
+    <div class="hint">Default login: <code>yash</code> / <code>friday123</code></div>
+  </div>
+</div>
+<script>
+const API="http://127.0.0.1:5000";
+
+function sw(t){
+  const isIn=t==='in';
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',(i===0&&isIn)||(i===1&&!isIn)));
+  document.getElementById('fIn').style.display=isIn?'':'none';
+  document.getElementById('fUp').style.display=isIn?'none':'';
+}
+
+function msg(id,text,type){const el=document.getElementById(id);el.textContent=text;el.className='alert '+(type==='err'?'err':'ok')}
+function setBtn(id,loading,label){const b=document.getElementById(id);b.disabled=loading;b.innerHTML=loading?`<span class="spin"></span>Please wait…`:label}
+
+['iU','iP'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>e.key==='Enter'&&doLogin()));
+['rN','rU','rP'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>e.key==='Enter'&&doReg()));
+
+async function doLogin(){
+  const u=document.getElementById('iU').value.trim(),p=document.getElementById('iP').value;
+  if(!u||!p){msg('aIn','Enter username and password','err');return}
+  setBtn('bIn',true,'Sign in');
+  try{
+    const r=await fetch(`${API}/api/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    const d=await r.json();
+    if(!r.ok){msg('aIn',d.error||'Login failed','err');return}
+    localStorage.setItem('token',d.token);localStorage.setItem('name',d.name);localStorage.setItem('username',d.username);
+    window.location.href='index.html';
+  }catch{msg('aIn','Cannot reach server — is backend running?','err')}
+  finally{setBtn('bIn',false,'Sign in')}
+}
+
+async function doReg(){
+  const n=document.getElementById('rN').value.trim(),u=document.getElementById('rU').value.trim(),p=document.getElementById('rP').value;
+  if(!n||!u||!p){msg('aUp','All fields required','err');return}
+  setBtn('bUp',true,'Create account');
+  try{
+    const r=await fetch(`${API}/api/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,username:u,password:p})});
+    const d=await r.json();
+    if(!r.ok){msg('aUp',d.error||'Registration failed','err');return}
+    localStorage.setItem('token',d.token);localStorage.setItem('name',d.name);localStorage.setItem('username',d.username);
+    window.location.href='index.html';
+  }catch{msg('aUp','Cannot reach server','err')}
+  finally{setBtn('bUp',false,'Create account')}
+}
+
+(async()=>{
+  const t=localStorage.getItem('token');if(!t)return;
+  try{const r=await fetch(`${API}/api/auth/me`,{headers:{'Authorization':'Bearer '+t}});if(r.ok)window.location.href='index.html';}catch{}
+})();
+</script>
+</body>
+</html>

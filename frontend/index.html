@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Friday</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+<link rel="stylesheet" href="index.css"/>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══════════════════════════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+
+  <div class="sb-logo">
+    <div class="logo-mark">F</div>
+    <span class="logo-text">friday</span>
+  </div>
+
+  <!-- Model selector -->
+  <div class="sb-section">
+    <div class="sb-label">Model</div>
+    <div class="model-selector" id="modelSelector" onclick="toggleModelMenu()">
+      <div class="model-icon" id="modelIcon">●</div>
+      <span id="selectedModelName">Loading…</span>
+      <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="model-menu" id="modelMenu"></div>
+  </div>
+
+  <!-- Context (groups) -->
+  <div class="sb-section sb-context">
+    <div class="sb-label-row">
+      <span class="sb-label">Context</span>
+      <button class="icon-btn" onclick="openNewGroup()" title="New database group">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="group-list" id="groupList">
+      <div class="empty-state">No databases yet</div>
+    </div>
+  </div>
+
+  <!-- Mode toggle -->
+  <div class="sb-section">
+    <div class="sb-label">Mode</div>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="modeRag" onclick="setMode('rag')">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M2 11.5V4a1 1 0 011-1h10a1 1 0 011 1v5a1 1 0 01-1 1H5.5l-3.5 3V11.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        RAG Chat
+      </button>
+      <button class="mode-btn" id="modeSearch" onclick="setMode('search')">
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M11 11l2.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Semantic
+      </button>
+    </div>
+  </div>
+
+  <!-- User + logout -->
+  <div class="sb-footer">
+    <div class="user-chip">
+      <div class="avatar" id="avatarEl"></div>
+      <div class="user-info">
+        <span class="user-name" id="userNameEl"></span>
+        <span class="user-sub">Local instance</span>
+      </div>
+    </div>
+    <button class="icon-btn" onclick="logout()" title="Sign out">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M6 3H3a1 1 0 00-1 1v8a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══════════════════════════════════════════════════════════════ -->
+<main class="main" id="main">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <button class="icon-btn" onclick="toggleSidebar()" title="Toggle sidebar">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    </button>
+    <div class="topbar-title">friday</div>
+    <div class="topbar-actions">
+      <div class="status-dot" id="ollamaStatus" title="Ollama status" style="display: none;"></div>
+      <button class="icon-btn" onclick="openDbPanel()" title="Manage databases">
+        <svg viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="4.5" rx="5" ry="2" stroke="currentColor" stroke-width="1.3"/><path d="M3 4.5v3c0 1.1 2.24 2 5 2s5-.9 5-2v-3" stroke="currentColor" stroke-width="1.3"/><path d="M3 7.5v3c0 1.1 2.24 2 5 2s5-.9 5-2v-3" stroke="currentColor" stroke-width="1.3"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Chat area -->
+  <div class="chat-area" id="chatArea">
+
+    <!-- Welcome state -->
+    <div class="welcome" id="welcomeScreen">
+      <div class="welcome-logo">F</div>
+      <div class="welcome-msg">Good <span id="timeOfDay"></span>, <span id="welcomeName"></span></div>
+      <div class="welcome-sub">Select a database from the sidebar, then ask anything about your documents.</div>
+      <div class="welcome-pills">
+        <button class="pill" onclick="quickPrompt('Summarize the key points from the selected documents')">Summarize documents</button>
+        <button class="pill" onclick="quickPrompt('What are the main topics covered in these files?')">Main topics</button>
+        <button class="pill" onclick="quickPrompt('List any important dates or deadlines mentioned')">Key dates</button>
+        <button class="pill" onclick="quickPrompt('What conclusions does the author draw?')">Author conclusions</button>
+      </div>
+    </div>
+
+    <!-- Messages injected here -->
+    <div id="messages"></div>
+  </div>
+
+  <!-- Input area -->
+  <div class="input-area">
+    <div class="context-chips" id="contextChips"></div>
+    <div class="input-box">
+      <div class="input-inner">
+        <div class="input-field" id="userInput" contenteditable="true" data-placeholder="Ask anything…"></div>
+        <button class="send-btn" id="sendBtn" onclick="handleSend()">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M14 8L2 14V2l12 6z" fill="currentColor"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="input-hint">Cmd+K to focus · <span id="contextSummary">No context selected</span></div>
+  </div>
+</main>
+
+<!-- ═══ DATABASE PANEL ══════════════════════════════════════════════════════ -->
+<div class="panel-backdrop" id="panelBackdrop" onclick="closeDbPanel()"></div>
+<div class="db-panel" id="dbPanel">
+
+  <div class="panel-header">
+    <span class="panel-title">Databases</span>
+    <button class="icon-btn" onclick="closeDbPanel()">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <!-- 1. Scan folder -->
+  <div class="panel-section">
+    <div class="section-label">Scan folder for PDFs</div>
+    <div class="scan-row">
+      <input class="text-input" id="folderInput" type="text" placeholder="/path/to/your/pdfs"/>
+      <button class="btn-sm btn-primary" id="scanBtn" onclick="scanFolder()">Scan</button>
+    </div>
+    <div class="scan-hint" id="scanHint"></div>
+  </div>
+
+  <!-- 2. File list (shown after scan) -->
+  <div class="panel-section" id="scannedSection" style="display:none">
+    <div class="section-label-row">
+      <span class="section-label">Files found</span>
+      <label class="check-label">
+        <input type="checkbox" id="selectAllFiles" onchange="toggleSelectAll(this)" checked/>
+        Select all
+      </label>
+    </div>
+    <div class="file-list" id="fileList"></div>
+  </div>
+
+  <!-- 3. Save to group / index (shown after scan) -->
+  <div class="panel-section" id="indexSection" style="display:none">
+    <div class="section-label">Save to database group</div>
+    <div class="group-form">
+      <select class="text-input" id="groupSelect"></select>
+    </div>
+    <div id="newGroupForm" class="new-group-form">
+      <input class="text-input" id="newGroupName" type="text" placeholder="Group name  e.g. Research 2024"/>
+      <div class="color-row">
+        <span class="field-label" style="margin:0;white-space:nowrap">Color</span>
+        <div class="color-swatches" id="colorSwatches"></div>
+      </div>
+    </div>
+    <button class="btn-sm btn-primary" id="indexBtn" onclick="indexSelected()" style="margin-top:12px;width:100%">
+      Index selected files
+    </button>
+    <div class="progress-bar-wrap" id="progressWrap" style="display:none">
+      <div class="progress-bar" id="progressBar"></div>
+      <span class="progress-label" id="progressLabel"></span>
+    </div>
+  </div>
+
+  <!-- 4. Existing groups -->
+  <div class="panel-section">
+    <div class="section-label">Your databases</div>
+    <div id="panelGroups"><div class="empty-state" style="padding:8px 0">No databases yet</div></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL — new group ════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="closeModal()"></div>
+<div class="modal" id="modal">
+  <div class="modal-title">New database group</div>
+  <div class="field">
+    <label class="field-label">Name</label>
+    <input class="text-input" id="modalGroupName" type="text" placeholder="e.g. Research Papers 2024"/>
+  </div>
+  <div class="field">
+    <label class="field-label">Color</label>
+    <div class="color-swatches" id="modalColorSwatches"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn-sm" onclick="closeModal()">Cancel</button>
+    <button class="btn-sm btn-primary" onclick="createGroup()">Create group</button>
+  </div>
+</div>
+
+<script src="index.js"></script>
+</body>
+</html>
